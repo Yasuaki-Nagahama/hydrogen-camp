@@ -16,16 +16,47 @@ export async function loader({context}: LoaderFunctionArgs) {
   const {collections} = await storefront.query(FEATURED_COLLECTION_QUERY);
   const featuredCollection = collections.nodes[0];
   const recommendedProducts = storefront.query(RECOMMENDED_PRODUCTS_QUERY);
+  const {blog} = await storefront.query(BLOGS_QUERY, {
+    variables: {
+      blogHandle: "news"
+    },
+  });
 
-  return defer({featuredCollection, recommendedProducts});
+  return defer({featuredCollection, recommendedProducts, blog:blog});
 }
 
 export default function Homepage() {
   const data = useLoaderData<typeof loader>();
+
   return (
     <div className="home">
       <FeaturedCollection collection={data.featuredCollection} />
       <RecommendedProducts products={data.recommendedProducts} />
+      <div className="blogs">
+        <h2>NEWS</h2>
+        <Suspense fallback={<div>Loading...</div>}>
+          <Await resolve={data.blog.articles}>
+              <div className="blogs-grid">
+                {data.blog.articles.nodes.map((blog) => (
+                  <Link
+                    key={blog.handle}
+                    className="recommended-blog"
+                    to={`/blogs/news/${blog.handle}`}
+                  >
+                    {blog?.images?.nodes[0] && (
+                      <Image
+                      data={blog.images.nodes[0]}
+                      aspectRatio="1/1"
+                      sizes="(min-width: 45em) 20vw, 50vw"
+                      />
+                    )}
+                    <h4>{blog.title}</h4>
+                  </Link>
+                ))}
+              </div>
+          </Await>
+        </Suspense>
+      </div>
     </div>
   );
 }
@@ -140,6 +171,43 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
       nodes {
         ...RecommendedProduct
       }
+    }
+  }
+` as const;
+
+const BLOGS_QUERY = `#graphql
+  query Blog(
+    $language: LanguageCode
+    $blogHandle: String!
+  )@inContext(language: $language) {
+    blog(handle: $blogHandle) {
+      articles(
+        first: 5
+      ) {
+        nodes {
+          ...ArticleItem
+        }
+      }
+    }
+  }
+  fragment ArticleItem on Article {
+    author: authorV2 {
+      name
+    }
+    contentHtml
+    handle
+    id
+    image {
+      id
+      altText
+      url
+      width
+      height
+    }
+    publishedAt
+    title
+    blog {
+      handle
     }
   }
 ` as const;
