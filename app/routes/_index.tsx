@@ -36,24 +36,36 @@ export default function Homepage() {
         <h2>NEWS</h2>
         <Suspense fallback={<div>Loading...</div>}>
           <Await resolve={data.blog.articles}>
-              <div className="blogs-grid">
-                {data.blog.articles.nodes.map((blog) => (
+            {data.blog.articles.nodes.map((blog) => (
+              <div className="blog-article">
                   <Link
                     key={blog.handle}
                     className="recommended-blog"
                     to={`/blogs/news/${blog.handle}`}
                   >
-                    {blog?.images?.nodes[0] && (
-                      <Image
-                      data={blog.images.nodes[0]}
-                      aspectRatio="1/1"
-                      sizes="(min-width: 45em) 20vw, 50vw"
-                      />
+                    {blog?.image && (
+                      <div className="blog-article-image">
+                        <Image
+                          alt={blog.image.altText || blog.title}
+                          aspectRatio="3/2"
+                          data={blog.image}
+                          sizes="(min-width: 768px) 50vw, 100vw"
+                        />
+                      </div>
                     )}
                     <h4>{blog.title}</h4>
+                    <small>
+                      {
+                        new Intl.DateTimeFormat('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        }).format(new Date(blog.publishedAt!))
+                      }
+                    </small>
                   </Link>
-                ))}
               </div>
+            ))}
           </Await>
         </Suspense>
       </div>
